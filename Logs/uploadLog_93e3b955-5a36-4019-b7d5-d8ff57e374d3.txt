@@ -1,0 +1,8 @@
+Upload Log at 27.06.2021 20:16:05
+--- Were added ---
+LastName: Test1; MiddleName: Test1; FirstName: Test1; BirthDate: 03.03.1965 0:00:00; GenderID: 2; IsExternal: True; PersonalNumber: 
+--- Were modified ---
+ID: 39; LastName: Test; MiddleName: T; FirstName: TF; BirthDate: 02.02.1969 0:00:00; GenderID: 1; IsExternal: False; PersonalNumber: S2
+--- Not valid: ---
+LastName: Wrong1; MiddleName: Wr1; FirstName: Wrong1; BirthDate: 01.01.1970 0:00:00; GenderID: 1; IsExternal: True; PersonalNumber: S2
+LastName: Wrong2; MiddleName: Wr2; FirstName: Wrong2; BirthDate: 01.01.1970 0:00:00; GenderID: 1; IsExternal: False; PersonalNumber: 

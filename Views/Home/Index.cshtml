@@ -1,0 +1,283 @@
+﻿
+@{
+    ViewBag.Title = "Start page";
+}
+
+<link href="~/Content/themes/default/easyui.css" rel="stylesheet" />
+<link href="~/Content/themes/icon.css" rel="stylesheet" />
+@{ 
+    var errMessage = TempData["ErrorMessage"] as string;
+    if (errMessage != null)
+    {
+        <p style="color:darkred">@errMessage</p>
+    }
+}
+<table id="DataGrid"></table>
+
+<div id="dlg" class="easyui-dialog" style="width:400px;height:280px;padding:10px 20px"
+     closed="true" buttons="#dlg-buttons">
+    <form id="fm" method="post" novalidate>
+        <div class="fitem">
+            <label>ID:</label>
+            <input name="ID" id="ID" class="easyui-textbox" disabled="true">
+        </div>
+        <div class="fitem">
+            <label>First Name:</label>
+            <input name="FirstName" class="easyui-textbox">
+        </div>
+        <div class="fitem">
+            <label>Middle Name:</label>
+            <input name="MiddleName" class="easyui-textbox">
+        </div>
+        <div class="fitem">
+            <label>Last Name:</label>
+            <input name="LastName" class="easyui-textbox" required="true">
+        </div>
+        <div class="fitem">
+            <label>GenderID:</label>
+            <input name="GenderID" id="Gender" class="easyui-box">
+        </div>
+        <div class="fitem">
+            <label>BirthDate:</label>
+            <input name="BirthDate" class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" />
+        </div>
+        <div class="fitem">
+            <label>IsExternal:</label>
+            <input name="IsExternal" id="IsExternal" class="easyui-checkbox" type="checkbox">
+        </div>
+        <div class="fitem PersonalNumber">
+            <label>Personal Number:</label>
+            <input name="PersonalNumber" id="PersonalNumber" class="easyui-textbox" data-options="required:true">
+        </div>
+    </form>
+</div>
+<div id="dlg-buttons">
+    <a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-ok" onclick="saveUser()" style="width:90px">Save</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick="javascript:$('#dlg').dialog('close')" style="width:90px">Cancel</a>
+</div>
+
+
+<div id="dlgFile" class="easyui-dialog" style="width:400px;height:280px;padding:10px 20px" closed="true" buttons="#dlgFile-buttons">    
+    <form id="fmUpload" method="post" enctype="multipart/form-data">
+     <input id="file1" class="easyui-filebox" name="file1" style="width:300px" accept="application/json/>        
+    </form>
+</div>
+<div id="dlgFile-buttons">
+    <a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-ok" style="width:90px" id="btnUpload" onclick="Upload()">Upload</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick="javascript:$('#dlgFile').dialog('close')" style="width:90px">Cancel</a>
+</div>
+
+<script type="text/javascript">
+ $(function() {
+     $('#DataGrid').datagrid({
+         title: 'Employees',
+         url: '@Url.Action("GetList", "Home")',
+         width: '100%',
+         height: '600',
+         singleSelect: true,
+         pagination: true,
+         pageSize: 10,
+         pageList: [10,50,100],
+         sortName: 'ID',
+         sortOrder: 'asc',
+         rownumbers: true,
+         toolbar: [{
+		        iconCls: 'icon-edit',
+		        handler: function(){editDialog()},
+                text: 'Edit',
+                },{
+                iconCls: 'icon-add',
+                text: 'Create',
+                handler: function () { newEmployee() }                
+                },{
+                iconCls: 'icon-large-smartart',
+                text: 'Upload from file',
+		        handler: function(){openFileDialog()}
+                }],
+         columns: [
+             [
+                 { field: 'ID', title: 'ID', width: 40, sortable: true},
+                 { field: 'FirstName', title: 'FirstName', width: 80, sortable:true },
+                 { field: 'MiddleName', title: 'MiddleName', width: 80, sortable:true },
+                 { field: 'LastName', title: 'LastName', width: 80, sortable:true},
+                 { field: 'Gender', title: 'Gender', width: 80, sortable:true  },
+                 { field: 'GenderId', title: 'Gender', width: 80, hidden:true },
+                 { field: 'BirthDate', title: 'BirthDate', width: 80, align: 'center', sortable:true  },
+                 { field: 'IsExternal', title: 'IsExternal', width: 80, formatter: formatCheckbox, sortable:true   },
+                 { field: 'PersonalNumber', title: 'PersonalNumber', width: 110, align: 'center', sortable:true  }
+
+             ]
+         ],
+         onDblClickRow:function(){
+             editDialog();
+	     }
+     });
+
+     $('#dlg').bind('keyup', function(e) {
+        if (e.keyCode == 27){ 
+		    $('#dlg').dialog('close');
+	    }
+     });
+
+     $('#IsExternal').change(function () {
+         var checked = this.checked;
+         this.value = checked;
+         ShowHidePersonalNumber(checked)
+     });          
+ });
+
+function Upload() {
+    $('#fmUpload').form('submit', {
+    url: '/Home/UploadFile',
+        success: function (result) {
+            var result = eval('(' + result + ')');
+
+    $("#file1").filebox('reset');    
+        $('#DataGrid').datagrid('reload'); 
+        if (result.Result == 0) {
+            $.messager.show({
+                timeout: 0,
+                style:{
+		                right:'',
+		                bottom:''
+	            },
+                title: 'Success',
+                msg: '<a href="' + '@Url.Action("GetLogFile", "Home")/' + result.Message + '">Download Log file</a>'                
+            });
+        } else {
+  			$.messager.show({
+  				title: 'Error',
+                timeout: 0,
+                style:{
+		                right:'',
+		                bottom:'',
+	            },
+  				msg: '<div style="height:300px">'+ result.Message +'</div>',
+	            width: 500,
+                resizable: true
+  			});
+  		}
+    $('#dlgFile').dialog('close');
+    }
+});
+}
+
+function ShowHidePersonalNumber(checked)
+{
+    if (checked) {
+        $('#PersonalNumber').textbox('disableValidation');
+        $('.PersonalNumber').hide();
+    }
+    else {
+        $('#PersonalNumber').textbox('enableValidation');
+         $('.PersonalNumber').show();
+    }
+}
+
+function formatCheckbox(value, row, index)
+{
+ if(value)
+    return "<input type='checkbox' checked=true disabled='disabled' >";
+ else
+    return "<input type='checkbox' disabled='disabled' >";
+}
+
+function editDialog(){
+     var row = $('#DataGrid').datagrid('getSelected');
+     if (row) {
+         var fio = row.FirstName + " " + row.MiddleName + " " + row.LastName;
+          $('#dlg').dialog('open').dialog('setTitle','Edit Employee: '+ fio);
+          $('#fm').form('load', row);
+         if(row.IsExternal == true){
+             $('#IsExternal').prop('checked', true);
+             $('#IsExternal').val(true);
+         }
+         else {
+             $('#IsExternal').prop('checked', false);
+             $('#IsExternal').val(false);
+				}
+         url = 'Employees/Edit/' + row.id;
+         ShowHidePersonalNumber(row.IsExternal)
+    }
+
+}
+
+function newEmployee(){
+    $('#dlg').dialog('open').dialog('setTitle','Create Employee');
+    $('#fm').form('clear');
+    url = 'Employees/Create/';
+    ShowHidePersonalNumber(false)
+}
+
+function saveUser(){
+    var id = $('#ID').val(); 
+    var url = '@Url.Action("Create", "Home")';
+    if (id)
+    {
+        url = '@Url.Action("Edit", "Home")' + '/'+ id;
+    }
+  $('#fm').form('submit',{
+  	url: url,
+  	onSubmit: function(){
+  		return $(this).form('validate');
+  	},
+  	success: function(result){
+  		var result = eval('('+result+')');
+  		if (result.Result == 0){
+  			$('#dlg').dialog('close');
+  			$('#DataGrid').datagrid('reload');
+  		} else {
+  			$.messager.show({
+  				title: 'Error',
+                style:{
+		                right:'',
+		                bottom:''
+	                  },  				
+                msg: '<div style="height:300px">'+ result.Message +'</div>',
+	            width: 500,
+                resizable: true
+  			});
+  		}
+  	}
+  });
+}
+
+function myformatter(date){
+            var y = date.getFullYear();
+            var m = date.getMonth()+1;
+            var d = date.getDate();
+            return y+'-'+(m<10?('0'+m):m)+'-'+(d<10?('0'+d):d);
+    }
+
+function myparser(s){
+            if (!s) return new Date();
+            var ss = (s.split('.'));
+            var y = parseInt(ss[2],10);
+            var m = parseInt(ss[1],10);
+            var d = parseInt(ss[0],10);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d)){
+                return new Date(y,m-1,d);
+            } else {
+                var ss = (s.split('-'));
+                var y = parseInt(ss[0],10);
+                var m = parseInt(ss[1],10);
+                var d = parseInt(ss[2], 10);
+                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                    return new Date(y, m - 1, d);
+                } else {return new Date(1995,3,5); }
+            }
+}
+
+$("#Gender").combobox({
+		width: 175,
+		url: '@Url.Action("GetGenders", "Home")',
+		valueField: 'Value',
+	    textField: 'Text',
+        editable: false,
+        panelHeight: 'auto'
+	});
+
+function openFileDialog(){
+          $('#dlgFile').dialog('open').dialog('setTitle','Upload List of Employees');
+}
+</script>
